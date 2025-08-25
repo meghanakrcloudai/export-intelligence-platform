@@ -1,38 +1,37 @@
 import requests
 import pandas as pd
 import os
+from bs4 import BeautifulSoup
 
-# URL of the country-wise trade statistics
 URL = "https://tradestat.commerce.gov.in/eidb/country_wise_ttrade"
 
-# Output CSV path (robust relative to this script)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_CSV = os.path.join(BASE_DIR, "../../data/trade_stats.csv")
 
 def get_trade_data():
-    # Fetch HTML page
     response = requests.get(URL)
     response.raise_for_status()
 
-    # Parse all tables from the HTML
-    tables = pd.read_html(response.text)
+    # Use BeautifulSoup to clean HTML first
+    soup = BeautifulSoup(response.text, "lxml")  # or "html.parser"
+    
+    # Extract all tables as strings
+    tables_html = soup.find_all("table")
 
-    if not tables:
+    if not tables_html:
         raise ValueError("No tables found on the page")
 
-    df = tables[0]
+    # Read first table into pandas, ignore quoting issues
+    df = pd.read_html(str(tables_html[0]), flavor="bs4", errors='ignore')[0]
 
     # Clean column names
     df.columns = [col.strip() for col in df.columns]
 
-    # Remove quotes from all string columns to prevent quoting errors
+    # Remove quotes from string columns
     for col in df.select_dtypes(include="object").columns:
         df[col] = df[col].str.replace('"', '').str.replace("'", "")
 
-    # Ensure data folder exists
     os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
-
-    # Save CSV
     df.to_csv(OUTPUT_CSV, index=False, quoting=pd.io.common.csv.QUOTE_NONNUMERIC)
 
     return df
