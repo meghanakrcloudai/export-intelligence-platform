@@ -4,29 +4,32 @@ import os
 from bs4 import BeautifulSoup
 from io import StringIO
 
+# URL of trade stats
 URL = "https://tradestat.commerce.gov.in/eidb/country_wise_ttrade"
+
+# Path to save CSV
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_CSV = os.path.join(BASE_DIR, "../../data/trade_stats.csv")
 
 def get_trade_data():
-    # Fetch page
+    # Fetch HTML page
     response = requests.get(URL)
     response.raise_for_status()
 
-    # Parse HTML
+    # Parse HTML using BeautifulSoup
     soup = BeautifulSoup(response.text, "lxml")
     table = soup.find("table")
     if not table:
         raise ValueError("No tables found on the page")
 
-    # Pre-clean table HTML: remove problematic quotes
-    for cell in table.find_all("td"):
-        cell.string = cell.get_text(strip=True).replace('"', '').replace("'", "")
+    # Clean all cell text to remove quotes and extra whitespace
+    for cell in table.find_all(["td", "th"]):
+        text = cell.get_text(strip=True)
+        text = text.replace('"', '').replace("'", '')  # Remove illegal quotes
+        cell.string = text
 
-    # Convert cleaned table to string
+    # Convert cleaned table HTML to string and parse with pandas
     table_str = str(table)
-
-    # Read with pandas
     df = pd.read_html(StringIO(table_str))[0]
 
     # Clean column names
