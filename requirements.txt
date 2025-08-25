@@ -69,3 +69,9 @@ urllib3==2.5.0
 w3lib==2.3.1
 watchdog==6.0.0
 zope.interface==7.2
+requests
+pandas
+beautifulsoup4
+streamlit
+playwright
+
