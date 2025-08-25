@@ -1,6 +1,6 @@
-import requests
 import pandas as pd
 import os
+import requests
 from bs4 import BeautifulSoup
 from io import StringIO
 
@@ -9,7 +9,6 @@ URL = "https://tradestat.commerce.gov.in/eidb/country_wise_ttrade"
 
 # Path to save CSV
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_CSV = os.path.join(BASE_DIR, "../../data/trade_stats.csv")
 
 def get_trade_data():
     # Fetch HTML page
@@ -17,15 +16,15 @@ def get_trade_data():
     response.raise_for_status()
 
     # Parse HTML using BeautifulSoup
-    soup = BeautifulSoup(response.text, "lxml")
+    soup = BeautifulSoup(response.text, "html.parser")
     table = soup.find("table")
+
     if not table:
         raise ValueError("No tables found on the page")
 
     # Clean all cell text to remove quotes and extra whitespace
-    for cell in table.find_all(["td", "th"]):
+    for cell in table.find_all(["th", "td"]):
         text = cell.get_text(strip=True)
-        text = text.replace('"', '').replace("'", '')  # Remove illegal quotes
         cell.string = text
 
     # Convert cleaned table HTML to string and parse with pandas
@@ -35,13 +34,13 @@ def get_trade_data():
     # Clean column names
     df.columns = [col.strip() for col in df.columns]
 
-    # Ensure data folder exists
-    os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
-
-    # Save CSV safely
-    df.to_csv(OUTPUT_CSV, index=False, quoting=pd.io.common.csv.QUOTE_NONNUMERIC)
+    # (Optional) save CSV locally
+    csv_path = os.path.join(BASE_DIR, "data", "trade_stats.csv")
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+    df.to_csv(csv_path, index=False)
 
     return df
+
 
 if __name__ == "__main__":
     df = get_trade_data()
