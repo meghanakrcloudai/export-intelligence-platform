@@ -1,3 +1,18 @@
-Product,Value
-Product A,1000
-Product B,2000
+# modules/trade_stats/scraper.py
+import requests
+import pandas as pd
+
+URL = "https://tradestat.commerce.gov.in/eidb/country_wise_ttrade"
+
+def get_trade_data():
+    response = requests.get(URL)
+    response.raise_for_status()
+    tables = pd.read_html(response.text)
+    df = tables[0]
+    df.columns = [col.strip() for col in df.columns]
+    df.to_csv("../../data/trade_stats.csv", index=False)
+    return df
+
+if __name__ == "__main__":
+    df = get_trade_data()
+    print(df.head())
