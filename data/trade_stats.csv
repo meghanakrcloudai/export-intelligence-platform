@@ -9,6 +9,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_CSV = os.path.join(BASE_DIR, "../../data/trade_stats.csv")
 
 def get_trade_data():
+    # Fetch page
     response = requests.get(URL)
     response.raise_for_status()
 
@@ -18,12 +19,15 @@ def get_trade_data():
     if not table:
         raise ValueError("No tables found on the page")
 
-    # Convert table HTML to string and replace problematic quotes
-    table_str = str(table).replace('"', '').replace("'", "")
+    # Pre-clean table HTML: remove problematic quotes
+    for cell in table.find_all("td"):
+        cell.string = cell.get_text(strip=True).replace('"', '').replace("'", "")
 
-    # Use pandas to read HTML table from cleaned string
-    df_list = pd.read_html(StringIO(table_str))
-    df = df_list[0]
+    # Convert cleaned table to string
+    table_str = str(table)
+
+    # Read with pandas
+    df = pd.read_html(StringIO(table_str))[0]
 
     # Clean column names
     df.columns = [col.strip() for col in df.columns]
