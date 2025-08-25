@@ -15,7 +15,7 @@ file_map = {
 }
 
 try:
-    df = pd.read_csv(file_map[tab])
+    df = pd.read_csv(file_map[tab], on_bad_lines='skip', quotechar='"', skipinitialspace=True)
     st.dataframe(df)
 except FileNotFoundError:
     st.warning(f"{file_map[tab]} not found. Run the corresponding module first.")
