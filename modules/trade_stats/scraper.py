@@ -1,20 +1,40 @@
+import os
 import requests
-from bs4 import BeautifulSoup
 import pandas as pd
+from bs4 import BeautifulSoup
+from io import StringIO
 
-URL = "https://www.commerce.gov.in/trade-statistics/"
+URL = "https://tradestat.commerce.gov.in/eidb/country_wise_ttrade"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "../../data")
+os.makedirs(DATA_DIR, exist_ok=True)
 
 def get_trade_data():
     response = requests.get(URL)
-    soup = BeautifulSoup(response.text, "html.parser")
+    response.raise_for_status()
+    soup = BeautifulSoup(response.content, "html.parser")
 
-    # TODO: Inspect commerce.gov.in HTML and select table or CSV links
-    table = soup.find("table")  # Placeholder
-    df = pd.read_html(str(table))[0]
+    # Find first table
+    table = soup.find("table")
+    if not table:
+        raise ValueError("No tables found on the page")
+
+    # Clean text
+    for cell in table.find_all(["td", "th"]):
+        cell.string = cell.get_text(strip=True)
+
+    # Convert to pandas dataframe
+    df = pd.read_html(StringIO(str(table)))[0]
+    df.columns = [col.strip() for col in df.columns]
+
+    return df
+
+def save_trade_data():
+    df = get_trade_data()
+    csv_path = os.path.join(DATA_DIR, "trade_stats.csv")
+    df.to_csv(csv_path, index=False)
+    print(f"✅ Data saved to {csv_path}")
     return df
 
 if __name__ == "__main__":
-    df = get_trade_data()
-    print(df.head())
-    df.to_csv("../../data/trade_stats.csv", index=False)
-
+    save_trade_data()
