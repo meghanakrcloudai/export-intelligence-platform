@@ -14,8 +14,15 @@ file_map = {
     "Recommendations": "../data/recommendations.csv"
 }
 
+DATA_FILE = file_map[tab]
+
 try:
-    df = pd.read_csv(file_map[tab], on_bad_lines='skip', quotechar='"', skipinitialspace=True)
-    st.dataframe(df)
+    df = pd.read_csv(DATA_FILE, on_bad_lines='skip', quotechar='"', skipinitialspace=True, engine='python')
+    if df.empty:
+        st.warning(f"{DATA_FILE} is empty or has malformed rows. Please check the source module.")
+    else:
+        st.dataframe(df)
 except FileNotFoundError:
-    st.warning(f"{file_map[tab]} not found. Run the corresponding module first.")
+    st.warning(f"{DATA_FILE} not found. Run the corresponding module first.")
+except pd.errors.ParserError as e:
+    st.error(f"Failed to parse {DATA_FILE}: {e}")
